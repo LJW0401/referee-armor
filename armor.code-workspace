@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "repository",
+      "path": "."
+    },
+    {
+      "name": "esp32-firmware",
+      "path": "firmware/esp32"
+    }
+  ],
+  "extensions": {
+    "recommendations": [
+      "platformio.platformio-ide"
+    ]
+  }
+}
