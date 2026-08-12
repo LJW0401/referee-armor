@@ -26,6 +26,13 @@ class StaticUiTests(unittest.TestCase):
         self.assertIn("{ red, green, blue, brightness_percent }", script)
         self.assertIn("brightnessPercent", script)
 
+    def test_ui_exposes_random_breathing_control(self) -> None:
+        document = (STATIC_DIRECTORY / "index.html").read_text(encoding="utf-8")
+        script = (STATIC_DIRECTORY / "app.js").read_text(encoding="utf-8")
+        self.assertIn('id="random-breathing"', document)
+        self.assertIn('"/api/led-effect"', script)
+        self.assertIn("effect: 1", script)
+
     def test_only_connection_snapshot_synchronizes_color_controls(self) -> None:
         script = (STATIC_DIRECTORY / "app.js").read_text(encoding="utf-8")
         self.assertIn("function render(snapshot, synchronizeColor = false)", script)

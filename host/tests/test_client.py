@@ -48,6 +48,8 @@ class FakeSerial:
             self._incoming.extend(encode_frame(0x82, request.sequence, payload))
         elif request.frame_type == 0x10:
             self._incoming.extend(encode_frame(0x90, request.sequence))
+        elif request.frame_type == 0x11:
+            self._incoming.extend(encode_frame(0x91, request.sequence))
         return len(data)
 
     def reset_input_buffer(self) -> None:
@@ -84,6 +86,11 @@ class ArmorClientTests(unittest.TestCase):
         client.connect()
         with self.assertRaisesRegex(ValueError, "0..255"):
             client.set_led_color(256, 0, 0, 100)
+
+    def test_enables_independent_random_breathing_effect(self) -> None:
+        client = ArmorClient(FakeSerial())
+        client.connect()
+        client.set_led_effect(1)
 
     def test_rejects_wrong_handshake_nonce(self) -> None:
         client = ArmorClient(FakeSerial(wrong_nonce=True))
