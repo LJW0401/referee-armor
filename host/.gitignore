@@ -1,0 +1,6 @@
+# Python virtual environments, bytecode, and test-tool cache are local output.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/

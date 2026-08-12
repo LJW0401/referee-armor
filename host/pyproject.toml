@@ -1,0 +1,17 @@
+# This package is the desktop-side CLI for the armor USB CDC protocol.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "armor-host"
+version = "0.1.0"
+description = "Desktop serial client for the armor ESP32 module"
+requires-python = ">=3.10"
+dependencies = ["pyserial>=3.5,<4"]
+
+[project.scripts]
+armor-host = "armor_host.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
