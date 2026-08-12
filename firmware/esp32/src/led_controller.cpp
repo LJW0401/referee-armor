@@ -66,7 +66,9 @@ bool Controller::is_persistence_healthy() const { return persistence_healthy_; }
 
 bool Controller::load_color() {
   Preferences preferences;
-  if (!preferences.begin(kPreferencesNamespace, true)) {
+  // Open read-write on first boot so the namespace can be created before a
+  // later SET_LED_COLOR command persists the user's selection.
+  if (!preferences.begin(kPreferencesNamespace, false)) {
     color_ = kDefaultColor;
     return false;
   }
