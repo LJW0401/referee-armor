@@ -33,7 +33,7 @@ function renderList(target, values) {
   }
 }
 
-function render(snapshot) {
+function render(snapshot, synchronizeColor = false) {
   const { port, device, status } = snapshot;
   state.connected = true;
   connection.textContent = `已连接 · ${port}`;
@@ -49,7 +49,7 @@ function render(snapshot) {
   document.querySelector("#weight").textContent = weight;
   document.querySelector("#weight-detail").textContent = status.sample_age_ms === null
     ? "HX711 尚无有效样本" : `样本年龄 ${status.sample_age_ms} ms`;
-  setSelectedColorFromRgb(status.led_red, status.led_green, status.led_blue);
+  if (synchronizeColor) setSelectedColorFromRgb(status.led_red, status.led_green, status.led_blue);
   renderList(document.querySelector("#runtime-status"), [
     ["运行时间", `${status.uptime_ms} ms`], ["健康标志", `0x${status.health_flags.toString(16).padStart(4, "0")}`],
     ["WS2812 灯珠", status.led_count], ["灯效", status.active_led_effect],
@@ -87,7 +87,7 @@ connectButton.addEventListener("click", async () => {
   if (!select.value) return setMessage("请先选择一个串口", true);
   connectButton.disabled = true; setMessage("正在执行协议握手…");
   try {
-    render(await request("/api/connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ port: select.value }) }));
+    render(await request("/api/connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ port: select.value }) }), true);
     setMessage("握手成功，正在读取状态。"); state.polling = setInterval(pollStatus, 1000);
   } catch (error) { setMessage(`连接失败：${error.message}`, true); clearConnection(); }
 });

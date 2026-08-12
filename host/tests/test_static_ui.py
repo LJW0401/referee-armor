@@ -24,6 +24,12 @@ class StaticUiTests(unittest.TestCase):
         self.assertIn("selectedColor", script)
         self.assertIn("{ red, green, blue }", script)
 
+    def test_only_connection_snapshot_synchronizes_color_controls(self) -> None:
+        script = (STATIC_DIRECTORY / "app.js").read_text(encoding="utf-8")
+        self.assertIn("function render(snapshot, synchronizeColor = false)", script)
+        self.assertIn("if (synchronizeColor) setSelectedColorFromRgb", script)
+        self.assertIn("}), true);", script)
+
 
 if __name__ == "__main__":
     unittest.main()
