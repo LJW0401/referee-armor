@@ -13,6 +13,7 @@ namespace {
 constexpr uint8_t kGetDeviceInfo = 0x01;
 constexpr uint8_t kGetStatus = 0x02;
 constexpr uint8_t kSetLedColor = 0x10;
+constexpr uint8_t kSetLedEffect = 0x11;
 constexpr uint8_t kResponseMask = 0x80;
 constexpr uint8_t kErrorResponse = 0xFF;
 
@@ -28,6 +29,7 @@ constexpr size_t kDeviceInfoRequestLength = 4;
 constexpr size_t kDeviceInfoResponseLength = 20;
 constexpr size_t kStatusResponseLength = 24;
 constexpr size_t kSetLedColorRequestLength = 4;
+constexpr size_t kSetLedEffectRequestLength = 1;
 
 constexpr uint8_t kFirmwareMajor = 0;
 constexpr uint8_t kFirmwareMinor = 2;
@@ -201,6 +203,10 @@ void Endpoint::handle_request(const uint8_t* raw, size_t raw_length) {
     set_led_color(sequence, payload, payload_length);
     return;
   }
+  if (command == kSetLedEffect) {
+    set_led_effect(sequence, payload, payload_length);
+    return;
+  }
   send_error(sequence, command, kErrorUnsupportedCommand);
 }
 
@@ -244,13 +250,31 @@ void Endpoint::send_status(uint16_t sequence, size_t payload_length) {
   write_u32_le(response + 7, static_cast<uint32_t>(INT32_MIN));
   write_u32_le(response + 11, UINT32_MAX);
   response[15] = led_controller_.is_initialized() ? 16 : 0;
-  response[16] = 0;
+  response[16] = static_cast<uint8_t>(led_controller_.effect());
   const led::RgbColor color = led_controller_.color();
   response[17] = color.red;
   response[18] = color.green;
   response[19] = color.blue;
   response[20] = led_controller_.brightness_percent();
   send_frame(kGetStatus | kResponseMask, sequence, response, sizeof(response));
+}
+
+void Endpoint::set_led_effect(uint16_t sequence, const uint8_t* payload,
+                              size_t payload_length) {
+  if (payload_length != kSetLedEffectRequestLength ||
+      payload[0] > static_cast<uint8_t>(led::Effect::kRandomBreathing)) {
+    send_error(sequence, kSetLedEffect, kErrorInvalidPayload);
+    return;
+  }
+  if (!handshake_complete_) {
+    send_error(sequence, kSetLedEffect, kErrorNotConnected);
+    return;
+  }
+  if (!led_controller_.set_effect(static_cast<led::Effect>(payload[0]))) {
+    send_error(sequence, kSetLedEffect, kErrorInternal);
+    return;
+  }
+  send_frame(kSetLedEffect | kResponseMask, sequence, nullptr, 0);
 }
 
 void Endpoint::set_led_color(uint16_t sequence, const uint8_t* payload,

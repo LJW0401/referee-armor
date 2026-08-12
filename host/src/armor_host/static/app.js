@@ -5,6 +5,7 @@ const connection = document.querySelector("#connection-state");
 const connectButton = document.querySelector("#connect");
 const disconnectButton = document.querySelector("#disconnect");
 const applyColorButton = document.querySelector("#apply-color");
+const randomBreathingButton = document.querySelector("#random-breathing");
 const sliders = ["red", "green", "blue", "brightness"].map(component => ({
   input: document.querySelector(`#${component}-slider`),
   output: document.querySelector(`#${component}-value`),
@@ -41,6 +42,7 @@ function render(snapshot, synchronizeColor = false) {
   connectButton.disabled = true;
   disconnectButton.disabled = false;
   applyColorButton.disabled = false;
+  randomBreathingButton.disabled = false;
   renderList(document.querySelector("#device-info"), [
     ["设备 ID", device.device_id], ["固件", device.firmware_version],
     ["协议", `v${device.protocol_version}`], ["能力位图", `0x${device.capabilities.toString(16).padStart(8, "0")}`],
@@ -62,6 +64,7 @@ function clearConnection() {
   connection.textContent = "未连接"; connection.className = "state disconnected";
   connectButton.disabled = false; disconnectButton.disabled = true;
   applyColorButton.disabled = true;
+  randomBreathingButton.disabled = true;
   document.querySelector("#weight").textContent = "--";
   document.querySelector("#weight-detail").textContent = "等待有效样本";
 }
@@ -130,6 +133,14 @@ async function applyColor() {
     setMessage(`已将左右灯条设置为 ${colorPreview.textContent}。`);
   } catch (error) { setMessage(`设置灯光失败：${error.message}`, true); }
 }
+
+randomBreathingButton.addEventListener("click", async () => {
+  if (!state.connected) return setMessage("请先连接 ESP32", true);
+  try {
+    render(await request("/api/led-effect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ effect: 1 }) }));
+    setMessage("已启用独立随机呼吸灯。");
+  } catch (error) { setMessage(`设置呼吸灯失败：${error.message}`, true); }
+});
 
 document.querySelectorAll("[data-color]").forEach(button => button.addEventListener("click", () => {
   setSelectedColor(button.dataset.color); applyColor();

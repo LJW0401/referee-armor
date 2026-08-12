@@ -18,4 +18,7 @@ void setup() {
   serial_endpoint.begin(Serial);
 }
 
-void loop() { serial_endpoint.poll(); }
+void loop() {
+  serial_endpoint.poll();
+  led_controller.tick(millis());
+}

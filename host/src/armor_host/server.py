@@ -69,6 +69,17 @@ class ArmorRequestHandler(BaseHTTPRequestHandler):
                 return
             self._send_json(HTTPStatus.OK, snapshot)
             return
+        if path == "/api/led-effect":
+            body = self._read_json_body()
+            if body is None:
+                return
+            try:
+                snapshot = self.server.service.set_led_effect(body.get("effect"))
+            except ServiceError as error:
+                self._send_json(HTTPStatus.BAD_GATEWAY, {"error": str(error)})
+                return
+            self._send_json(HTTPStatus.OK, snapshot)
+            return
         self._send_json(HTTPStatus.NOT_FOUND, {"error": "endpoint not found"})
 
     def log_message(self, format: str, *args: object) -> None:

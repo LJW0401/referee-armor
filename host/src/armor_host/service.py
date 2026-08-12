@@ -90,6 +90,22 @@ class ArmorService:
             self._status_failures = 0
             return self._snapshot_locked(status)
 
+    def set_led_effect(self, effect: object) -> dict[str, object]:
+        """Select a validated LED effect and return the updated status."""
+
+        if not isinstance(effect, int) or isinstance(effect, bool):
+            raise ServiceError("LED effect must be an integer")
+        with self._lock:
+            if self._client is None:
+                raise ServiceError("no ESP32 serial session is connected")
+            try:
+                self._client.set_led_effect(effect)
+                status = self._client.get_status().to_dict()
+            except (ConnectionError, ValueError) as error:
+                raise ServiceError(str(error)) from error
+            self._status_failures = 0
+            return self._snapshot_locked(status)
+
     def _snapshot_locked(self, status: dict[str, object]) -> dict[str, object]:
         return {"port": self._port, "device": self._device, "status": status}
 

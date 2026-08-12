@@ -29,6 +29,9 @@ class FakeClient:
     def set_led_color(self, red: int, green: int, blue: int, brightness_percent: int) -> None:
         self.color = (red, green, blue, brightness_percent)
 
+    def set_led_effect(self, effect: int) -> None:
+        self.effect = effect
+
 
 class ArmorServiceTests(unittest.TestCase):
     """Verify only verified sessions become browser-visible."""
@@ -59,6 +62,13 @@ class ArmorServiceTests(unittest.TestCase):
         service.connect("COM3")
         service.set_led_color(128, 0, 255, 50)
         self.assertEqual(client.color, (128, 0, 255, 50))
+
+    def test_enables_random_breathing_effect(self) -> None:
+        client = FakeClient()
+        service = ArmorService(lambda port: client)
+        service.connect("COM3")
+        service.set_led_effect(1)
+        self.assertEqual(client.effect, 1)
 
 
 if __name__ == "__main__":

@@ -40,6 +40,8 @@ class Endpoint {
   void send_status(uint16_t sequence, size_t payload_length);
   void set_led_color(uint16_t sequence, const uint8_t* payload,
                      size_t payload_length);
+  void set_led_effect(uint16_t sequence, const uint8_t* payload,
+                      size_t payload_length);
 
   led::Controller& led_controller_;
   Stream* serial_ = nullptr;

@@ -23,6 +23,7 @@ BAUDRATE = 115200
 GET_DEVICE_INFO = 0x01
 GET_STATUS = 0x02
 SET_LED_COLOR = 0x10
+SET_LED_EFFECT = 0x11
 ERROR_RESPONSE = 0xFF
 RESPONSE_MASK = 0x80
 HANDSHAKE_ATTEMPTS = 3
@@ -184,6 +185,17 @@ class ArmorClient:
         response = self._request(SET_LED_COLOR, bytes((*components, brightness_percent)))
         if response.payload:
             raise ConnectionError("SET_LED_COLOR response must have an empty payload")
+
+    def set_led_effect(self, effect: int) -> None:
+        """Select static output (0) or independent random breathing (1)."""
+
+        if not self._connected:
+            raise ConnectionError("SET_LED_EFFECT requires a completed handshake")
+        if effect not in (0, 1):
+            raise ValueError("LED effect must be 0 (static) or 1 (random breathing)")
+        response = self._request(SET_LED_EFFECT, bytes((effect,)))
+        if response.payload:
+            raise ConnectionError("SET_LED_EFFECT response must have an empty payload")
 
     def _request(self, command: int, payload: bytes = b"") -> Frame:
         sequence = self._next_sequence
