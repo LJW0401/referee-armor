@@ -21,7 +21,7 @@ class Controller {
   void begin();
 
   /** Applies one RGB color to every LED on both strips. */
-  void set_color(RgbColor color);
+  bool set_color(RgbColor color);
 
   /** Returns the single color shared by both strips. */
   RgbColor color() const;
@@ -29,9 +29,16 @@ class Controller {
   /** Reports whether the WS2812 output devices were initialized. */
   bool is_initialized() const;
 
+  /** Reports whether the selected color can be stored in NVS. */
+  bool is_persistence_healthy() const;
+
  private:
+  bool load_color();
+  bool save_color(RgbColor color) const;
+
   bool initialized_ = false;
-  RgbColor color_{0, 0, 0};
+  bool persistence_healthy_ = false;
+  RgbColor color_{128, 0, 255};
 };
 
 }  // namespace armor::led

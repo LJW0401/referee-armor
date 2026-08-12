@@ -20,6 +20,7 @@ constexpr uint8_t kErrorUnsupportedVersion = 0x01;
 constexpr uint8_t kErrorUnsupportedCommand = 0x02;
 constexpr uint8_t kErrorInvalidPayload = 0x03;
 constexpr uint8_t kErrorNotConnected = 0x04;
+constexpr uint8_t kErrorInternal = 0x06;
 
 constexpr size_t kHeaderLength = 6;
 constexpr size_t kCrcLength = 2;
@@ -235,7 +236,10 @@ void Endpoint::send_status(uint16_t sequence, size_t payload_length) {
 
   uint8_t response[kStatusResponseLength]{};
   response[0] = 1;
-  write_u16_le(response + 1, led_controller_.is_initialized() ? 1U << 4 : 0);
+  const uint16_t health_flags =
+      (led_controller_.is_initialized() ? 1U << 4 : 0) |
+      (led_controller_.is_persistence_healthy() ? 1U << 6 : 0);
+  write_u16_le(response + 1, health_flags);
   write_u32_le(response + 3, millis());
   write_u32_le(response + 7, static_cast<uint32_t>(INT32_MIN));
   write_u32_le(response + 11, UINT32_MAX);
@@ -254,7 +258,10 @@ void Endpoint::set_led_color(uint16_t sequence, const uint8_t* payload,
     send_error(sequence, kSetLedColor, kErrorNotConnected);
     return;
   }
-  led_controller_.set_color({payload[0], payload[1], payload[2]});
+  if (!led_controller_.set_color({payload[0], payload[1], payload[2]})) {
+    send_error(sequence, kSetLedColor, kErrorInternal);
+    return;
+  }
   send_frame(kSetLedColor | kResponseMask, sequence, nullptr, 0);
 }
 
