@@ -5,6 +5,11 @@ const connection = document.querySelector("#connection-state");
 const connectButton = document.querySelector("#connect");
 const disconnectButton = document.querySelector("#disconnect");
 const applyColorButton = document.querySelector("#apply-color");
+const sliders = ["red", "green", "blue"].map(component => ({
+  input: document.querySelector(`#${component}-slider`),
+  output: document.querySelector(`#${component}-value`),
+}));
+const colorPreview = document.querySelector("#color-preview");
 
 async function request(path, options = {}) {
   const response = await fetch(path, options);
@@ -89,19 +94,39 @@ disconnectButton.addEventListener("click", async () => {
   await request("/api/disconnect", { method: "POST" }); clearConnection(); setMessage("已断开串口。");
 });
 
-async function applyColor(hex) {
-  if (!state.connected) return setMessage("请先连接 ESP32", true);
+function selectedColor() {
+  return sliders.map(slider => Number.parseInt(slider.input.value, 10));
+}
+
+function updateColorPreview() {
+  const [red, green, blue] = selectedColor();
+  const hex = `#${[red, green, blue].map(value => value.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
+  sliders.forEach(slider => { slider.output.textContent = slider.input.value; });
+  colorPreview.textContent = hex;
+  colorPreview.style.backgroundColor = hex;
+  colorPreview.style.color = red * 299 + green * 587 + blue * 114 > 150000 ? "#10151b" : "#ecf2f8";
+}
+
+function setSelectedColor(hex) {
   const color = hex.replace("#", "");
-  const values = [0, 2, 4].map(offset => Number.parseInt(color.slice(offset, offset + 2), 16));
+  sliders.forEach((slider, index) => { slider.input.value = Number.parseInt(color.slice(index * 2, index * 2 + 2), 16); });
+  updateColorPreview();
+}
+
+async function applyColor() {
+  if (!state.connected) return setMessage("请先连接 ESP32", true);
+  const [red, green, blue] = selectedColor();
   try {
-    render(await request("/api/led-color", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ red: values[0], green: values[1], blue: values[2] }) }));
-    setMessage(`已将左右灯条设置为 #${color.toUpperCase()}。`);
+    render(await request("/api/led-color", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ red, green, blue }) }));
+    setMessage(`已将左右灯条设置为 ${colorPreview.textContent}。`);
   } catch (error) { setMessage(`设置灯光失败：${error.message}`, true); }
 }
 
 document.querySelectorAll("[data-color]").forEach(button => button.addEventListener("click", () => {
-  document.querySelector("#color-picker").value = button.dataset.color; applyColor(button.dataset.color);
+  setSelectedColor(button.dataset.color); applyColor();
 }));
-applyColorButton.addEventListener("click", () => applyColor(document.querySelector("#color-picker").value));
+sliders.forEach(slider => slider.input.addEventListener("input", updateColorPreview));
+applyColorButton.addEventListener("click", applyColor);
 
+updateColorPreview();
 refreshPorts();
