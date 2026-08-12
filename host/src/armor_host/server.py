@@ -62,6 +62,7 @@ class ArmorRequestHandler(BaseHTTPRequestHandler):
             try:
                 snapshot = self.server.service.set_led_color(
                     body.get("red"), body.get("green"), body.get("blue")
+                    , body.get("brightness_percent")
                 )
             except ServiceError as error:
                 self._send_json(HTTPStatus.BAD_GATEWAY, {"error": str(error)})

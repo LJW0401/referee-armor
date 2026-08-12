@@ -21,10 +21,13 @@ class Controller {
   void begin();
 
   /** Applies one RGB color to every LED on both strips. */
-  bool set_color(RgbColor color);
+  bool set_color(RgbColor color, uint8_t brightness_percent);
 
   /** Returns the single color shared by both strips. */
   RgbColor color() const;
+
+  /** Returns the 0..100 brightness applied to the shared RGB ratio. */
+  uint8_t brightness_percent() const;
 
   /** Reports whether the WS2812 output devices were initialized. */
   bool is_initialized() const;
@@ -34,11 +37,12 @@ class Controller {
 
  private:
   bool load_color();
-  bool save_color(RgbColor color) const;
+  bool save_color(RgbColor color, uint8_t brightness_percent) const;
 
   bool initialized_ = false;
   bool persistence_healthy_ = false;
   RgbColor color_{128, 0, 255};
+  uint8_t brightness_percent_ = 100;
 };
 
 }  // namespace armor::led

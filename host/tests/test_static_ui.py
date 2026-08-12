@@ -16,13 +16,15 @@ class StaticUiTests(unittest.TestCase):
         document = (STATIC_DIRECTORY / "index.html").read_text(encoding="utf-8")
         for component in ("red", "green", "blue"):
             self.assertIn(f'id="{component}-slider"', document)
-        self.assertEqual(document.count('type="range"'), 3)
+        self.assertEqual(document.count('type="range"'), 4)
+        self.assertIn('id="brightness-slider"', document)
         self.assertNotIn('type="color"', document)
 
     def test_script_sends_slider_components_to_led_api(self) -> None:
         script = (STATIC_DIRECTORY / "app.js").read_text(encoding="utf-8")
         self.assertIn("selectedColor", script)
-        self.assertIn("{ red, green, blue }", script)
+        self.assertIn("{ red, green, blue, brightness_percent }", script)
+        self.assertIn("brightnessPercent", script)
 
     def test_only_connection_snapshot_synchronizes_color_controls(self) -> None:
         script = (STATIC_DIRECTORY / "app.js").read_text(encoding="utf-8")

@@ -26,8 +26,8 @@ constexpr size_t kHeaderLength = 6;
 constexpr size_t kCrcLength = 2;
 constexpr size_t kDeviceInfoRequestLength = 4;
 constexpr size_t kDeviceInfoResponseLength = 20;
-constexpr size_t kStatusResponseLength = 23;
-constexpr size_t kSetLedColorRequestLength = 3;
+constexpr size_t kStatusResponseLength = 24;
+constexpr size_t kSetLedColorRequestLength = 4;
 
 constexpr uint8_t kFirmwareMajor = 0;
 constexpr uint8_t kFirmwareMinor = 2;
@@ -235,7 +235,7 @@ void Endpoint::send_status(uint16_t sequence, size_t payload_length) {
   }
 
   uint8_t response[kStatusResponseLength]{};
-  response[0] = 1;
+  response[0] = 2;
   const uint16_t health_flags =
       (led_controller_.is_initialized() ? 1U << 4 : 0) |
       (led_controller_.is_persistence_healthy() ? 1U << 6 : 0);
@@ -249,6 +249,7 @@ void Endpoint::send_status(uint16_t sequence, size_t payload_length) {
   response[17] = color.red;
   response[18] = color.green;
   response[19] = color.blue;
+  response[20] = led_controller_.brightness_percent();
   send_frame(kGetStatus | kResponseMask, sequence, response, sizeof(response));
 }
 
@@ -262,7 +263,8 @@ void Endpoint::set_led_color(uint16_t sequence, const uint8_t* payload,
     send_error(sequence, kSetLedColor, kErrorNotConnected);
     return;
   }
-  if (!led_controller_.set_color({payload[0], payload[1], payload[2]})) {
+  if (!led_controller_.set_color({payload[0], payload[1], payload[2]},
+                                 payload[3])) {
     send_error(sequence, kSetLedColor, kErrorInternal);
     return;
   }

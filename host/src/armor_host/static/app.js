@@ -5,7 +5,7 @@ const connection = document.querySelector("#connection-state");
 const connectButton = document.querySelector("#connect");
 const disconnectButton = document.querySelector("#disconnect");
 const applyColorButton = document.querySelector("#apply-color");
-const sliders = ["red", "green", "blue"].map(component => ({
+const sliders = ["red", "green", "blue", "brightness"].map(component => ({
   input: document.querySelector(`#${component}-slider`),
   output: document.querySelector(`#${component}-value`),
 }));
@@ -49,7 +49,7 @@ function render(snapshot, synchronizeColor = false) {
   document.querySelector("#weight").textContent = weight;
   document.querySelector("#weight-detail").textContent = status.sample_age_ms === null
     ? "HX711 尚无有效样本" : `样本年龄 ${status.sample_age_ms} ms`;
-  if (synchronizeColor) setSelectedColorFromRgb(status.led_red, status.led_green, status.led_blue);
+  if (synchronizeColor) setSelectedColorFromRgb(status.led_red, status.led_green, status.led_blue, status.led_brightness_percent);
   renderList(document.querySelector("#runtime-status"), [
     ["运行时间", `${status.uptime_ms} ms`], ["健康标志", `0x${status.health_flags.toString(16).padStart(4, "0")}`],
     ["WS2812 灯珠", status.led_count], ["灯效", status.active_led_effect],
@@ -100,9 +100,11 @@ function selectedColor() {
 }
 
 function updateColorPreview() {
-  const [red, green, blue] = selectedColor();
-  const hex = `#${[red, green, blue].map(value => value.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
-  sliders.forEach(slider => { slider.output.textContent = slider.input.value; });
+  const [red, green, blue, brightnessPercent] = selectedColor();
+  const maximum = Math.max(red, green, blue);
+  const previewComponents = maximum === 0 ? [0, 0, 0] : [red, green, blue].map(value => Math.round(value / maximum * brightnessPercent / 100 * 255));
+  const hex = `#${previewComponents.map(value => value.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
+  sliders.forEach((slider, index) => { slider.output.textContent = index === 3 ? `${slider.input.value}%` : slider.input.value; });
   colorPreview.textContent = hex;
   colorPreview.style.backgroundColor = hex;
   colorPreview.style.color = red * 299 + green * 587 + blue * 114 > 150000 ? "#10151b" : "#ecf2f8";
@@ -110,20 +112,21 @@ function updateColorPreview() {
 
 function setSelectedColor(hex) {
   const color = hex.replace("#", "");
-  sliders.forEach((slider, index) => { slider.input.value = Number.parseInt(color.slice(index * 2, index * 2 + 2), 16); });
+  sliders.slice(0, 3).forEach((slider, index) => { slider.input.value = Number.parseInt(color.slice(index * 2, index * 2 + 2), 16); });
+  sliders[3].input.value = 100;
   updateColorPreview();
 }
 
-function setSelectedColorFromRgb(red, green, blue) {
-  sliders.forEach((slider, index) => { slider.input.value = [red, green, blue][index]; });
+function setSelectedColorFromRgb(red, green, blue, brightnessPercent) {
+  sliders.forEach((slider, index) => { slider.input.value = [red, green, blue, brightnessPercent][index]; });
   updateColorPreview();
 }
 
 async function applyColor() {
   if (!state.connected) return setMessage("请先连接 ESP32", true);
-  const [red, green, blue] = selectedColor();
+  const [red, green, blue, brightness_percent] = selectedColor();
   try {
-    render(await request("/api/led-color", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ red, green, blue }) }));
+    render(await request("/api/led-color", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ red, green, blue, brightness_percent }) }));
     setMessage(`已将左右灯条设置为 ${colorPreview.textContent}。`);
   } catch (error) { setMessage(`设置灯光失败：${error.message}`, true); }
 }
