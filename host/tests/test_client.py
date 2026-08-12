@@ -43,7 +43,7 @@ class FakeSerial:
                 + (1000).to_bytes(4, "little")
                 + (12345).to_bytes(4, "little", signed=True)
                 + (15).to_bytes(4, "little")
-                + bytes((4, 2, 0, 0, 0))
+                + bytes((4, 2, 12, 34, 56, 0, 0, 0))
             )
             self._incoming.extend(encode_frame(0x82, request.sequence, payload))
         elif request.frame_type == 0x10:
@@ -71,6 +71,7 @@ class ArmorClientTests(unittest.TestCase):
         self.assertEqual(status.weight_mg, 12345)
         self.assertEqual(status.sample_age_ms, 15)
         self.assertEqual(status.led_count, 4)
+        self.assertEqual((status.led_red, status.led_green, status.led_blue), (12, 34, 56))
 
     def test_sets_one_color_for_both_light_strips(self) -> None:
         client = ArmorClient(FakeSerial())

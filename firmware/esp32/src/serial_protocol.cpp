@@ -26,7 +26,7 @@ constexpr size_t kHeaderLength = 6;
 constexpr size_t kCrcLength = 2;
 constexpr size_t kDeviceInfoRequestLength = 4;
 constexpr size_t kDeviceInfoResponseLength = 20;
-constexpr size_t kStatusResponseLength = 20;
+constexpr size_t kStatusResponseLength = 23;
 constexpr size_t kSetLedColorRequestLength = 3;
 
 constexpr uint8_t kFirmwareMajor = 0;
@@ -245,6 +245,10 @@ void Endpoint::send_status(uint16_t sequence, size_t payload_length) {
   write_u32_le(response + 11, UINT32_MAX);
   response[15] = led_controller_.is_initialized() ? 16 : 0;
   response[16] = 0;
+  const led::RgbColor color = led_controller_.color();
+  response[17] = color.red;
+  response[18] = color.green;
+  response[19] = color.blue;
   send_frame(kGetStatus | kResponseMask, sequence, response, sizeof(response));
 }
 

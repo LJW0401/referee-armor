@@ -21,7 +21,7 @@ class FakeClient:
     def get_status(self) -> DeviceStatus:
         if self.fail_status:
             raise ConnectionError("serial read failed")
-        return DeviceStatus(1, 0, 10, None, None, 0, 0)
+        return DeviceStatus(1, 0, 10, None, None, 0, 0, 128, 0, 255)
 
     def close(self) -> None:
         self.closed = True

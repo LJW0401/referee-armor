@@ -88,6 +88,9 @@ class DeviceStatus:
     sample_age_ms: int | None
     led_count: int
     active_led_effect: int
+    led_red: int
+    led_green: int
+    led_blue: int
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -238,11 +241,11 @@ class ArmorClient:
 
     @staticmethod
     def _parse_status(frame: Frame) -> DeviceStatus:
-        if len(frame.payload) != 20:
+        if len(frame.payload) != 23:
             raise ConnectionError("GET_STATUS response has an invalid length")
         if frame.payload[0] != 1:
             raise ConnectionError("GET_STATUS schema is unsupported")
-        if frame.payload[17:20] != b"\x00\x00\x00":
+        if frame.payload[20:23] != b"\x00\x00\x00":
             raise ConnectionError("GET_STATUS reserved bytes are non-zero")
         weight_mg = int.from_bytes(frame.payload[7:11], "little", signed=True)
         sample_age_ms = int.from_bytes(frame.payload[11:15], "little")
@@ -254,6 +257,9 @@ class ArmorClient:
             sample_age_ms=None if sample_age_ms == 0xFFFFFFFF else sample_age_ms,
             led_count=frame.payload[15],
             active_led_effect=frame.payload[16],
+            led_red=frame.payload[17],
+            led_green=frame.payload[18],
+            led_blue=frame.payload[19],
         )
 
     @staticmethod

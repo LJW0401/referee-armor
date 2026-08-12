@@ -49,6 +49,7 @@ function render(snapshot) {
   document.querySelector("#weight").textContent = weight;
   document.querySelector("#weight-detail").textContent = status.sample_age_ms === null
     ? "HX711 尚无有效样本" : `样本年龄 ${status.sample_age_ms} ms`;
+  setSelectedColorFromRgb(status.led_red, status.led_green, status.led_blue);
   renderList(document.querySelector("#runtime-status"), [
     ["运行时间", `${status.uptime_ms} ms`], ["健康标志", `0x${status.health_flags.toString(16).padStart(4, "0")}`],
     ["WS2812 灯珠", status.led_count], ["灯效", status.active_led_effect],
@@ -110,6 +111,11 @@ function updateColorPreview() {
 function setSelectedColor(hex) {
   const color = hex.replace("#", "");
   sliders.forEach((slider, index) => { slider.input.value = Number.parseInt(color.slice(index * 2, index * 2 + 2), 16); });
+  updateColorPreview();
+}
+
+function setSelectedColorFromRgb(red, green, blue) {
+  sliders.forEach((slider, index) => { slider.input.value = [red, green, blue][index]; });
   updateColorPreview();
 }
 
