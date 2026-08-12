@@ -46,6 +46,8 @@ class FakeSerial:
                 + bytes((4, 2, 0, 0, 0))
             )
             self._incoming.extend(encode_frame(0x82, request.sequence, payload))
+        elif request.frame_type == 0x10:
+            self._incoming.extend(encode_frame(0x90, request.sequence))
         return len(data)
 
     def reset_input_buffer(self) -> None:
@@ -69,6 +71,17 @@ class ArmorClientTests(unittest.TestCase):
         self.assertEqual(status.weight_mg, 12345)
         self.assertEqual(status.sample_age_ms, 15)
         self.assertEqual(status.led_count, 4)
+
+    def test_sets_one_color_for_both_light_strips(self) -> None:
+        client = ArmorClient(FakeSerial())
+        client.connect()
+        client.set_led_color(0, 0, 255)
+
+    def test_rejects_out_of_range_color(self) -> None:
+        client = ArmorClient(FakeSerial())
+        client.connect()
+        with self.assertRaisesRegex(ValueError, "0..255"):
+            client.set_led_color(256, 0, 0)
 
     def test_rejects_wrong_handshake_nonce(self) -> None:
         client = ArmorClient(FakeSerial(wrong_nonce=True))

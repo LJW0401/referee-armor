@@ -22,6 +22,7 @@ from .protocol import (
 BAUDRATE = 115200
 GET_DEVICE_INFO = 0x01
 GET_STATUS = 0x02
+SET_LED_COLOR = 0x10
 ERROR_RESPONSE = 0xFF
 RESPONSE_MASK = 0x80
 HANDSHAKE_ATTEMPTS = 3
@@ -164,6 +165,18 @@ class ArmorClient:
         if not self._connected:
             raise ConnectionError("GET_STATUS requires a completed handshake")
         return self._parse_status(self._request(GET_STATUS))
+
+    def set_led_color(self, red: int, green: int, blue: int) -> None:
+        """Apply one static RGB color to both WS2812 strips after a handshake."""
+
+        if not self._connected:
+            raise ConnectionError("SET_LED_COLOR requires a completed handshake")
+        components = (red, green, blue)
+        if any(not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 255 for value in components):
+            raise ValueError("RGB components must be integers in the range 0..255")
+        response = self._request(SET_LED_COLOR, bytes(components))
+        if response.payload:
+            raise ConnectionError("SET_LED_COLOR response must have an empty payload")
 
     def _request(self, command: int, payload: bytes = b"") -> Frame:
         sequence = self._next_sequence

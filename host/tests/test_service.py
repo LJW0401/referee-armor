@@ -26,6 +26,9 @@ class FakeClient:
     def close(self) -> None:
         self.closed = True
 
+    def set_led_color(self, red: int, green: int, blue: int) -> None:
+        self.color = (red, green, blue)
+
 
 class ArmorServiceTests(unittest.TestCase):
     """Verify only verified sessions become browser-visible."""
@@ -49,6 +52,13 @@ class ArmorServiceTests(unittest.TestCase):
         with self.assertRaises(ServiceError):
             service.status()
         self.assertTrue(client.closed)
+
+    def test_sets_color_then_returns_fresh_status(self) -> None:
+        client = FakeClient()
+        service = ArmorService(lambda port: client)
+        service.connect("COM3")
+        service.set_led_color(128, 0, 255)
+        self.assertEqual(client.color, (128, 0, 255))
 
 
 if __name__ == "__main__":

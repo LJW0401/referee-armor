@@ -4,6 +4,7 @@ const message = document.querySelector("#message");
 const connection = document.querySelector("#connection-state");
 const connectButton = document.querySelector("#connect");
 const disconnectButton = document.querySelector("#disconnect");
+const applyColorButton = document.querySelector("#apply-color");
 
 async function request(path, options = {}) {
   const response = await fetch(path, options);
@@ -34,6 +35,7 @@ function render(snapshot) {
   connection.className = "state connected";
   connectButton.disabled = true;
   disconnectButton.disabled = false;
+  applyColorButton.disabled = false;
   renderList(document.querySelector("#device-info"), [
     ["设备 ID", device.device_id], ["固件", device.firmware_version],
     ["协议", `v${device.protocol_version}`], ["能力位图", `0x${device.capabilities.toString(16).padStart(8, "0")}`],
@@ -53,6 +55,7 @@ function clearConnection() {
   clearInterval(state.polling); state.polling = null;
   connection.textContent = "未连接"; connection.className = "state disconnected";
   connectButton.disabled = false; disconnectButton.disabled = true;
+  applyColorButton.disabled = true;
   document.querySelector("#weight").textContent = "--";
   document.querySelector("#weight-detail").textContent = "等待有效样本";
 }
@@ -85,5 +88,20 @@ connectButton.addEventListener("click", async () => {
 disconnectButton.addEventListener("click", async () => {
   await request("/api/disconnect", { method: "POST" }); clearConnection(); setMessage("已断开串口。");
 });
+
+async function applyColor(hex) {
+  if (!state.connected) return setMessage("请先连接 ESP32", true);
+  const color = hex.replace("#", "");
+  const values = [0, 2, 4].map(offset => Number.parseInt(color.slice(offset, offset + 2), 16));
+  try {
+    render(await request("/api/led-color", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ red: values[0], green: values[1], blue: values[2] }) }));
+    setMessage(`已将左右灯条设置为 #${color.toUpperCase()}。`);
+  } catch (error) { setMessage(`设置灯光失败：${error.message}`, true); }
+}
+
+document.querySelectorAll("[data-color]").forEach(button => button.addEventListener("click", () => {
+  document.querySelector("#color-picker").value = button.dataset.color; applyColor(button.dataset.color);
+}));
+applyColorButton.addEventListener("click", () => applyColor(document.querySelector("#color-picker").value));
 
 refreshPorts();
