@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "armor-host"
-version = "0.2.0"
+version = "0.2.1"
 description = "Desktop serial client for the armor ESP32 module"
 requires-python = ">=3.10"
 dependencies = ["pyserial>=3.5,<4"]
