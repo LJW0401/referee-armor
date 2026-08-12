@@ -22,6 +22,7 @@ from .protocol import (
 BAUDRATE = 115200
 GET_DEVICE_INFO = 0x01
 GET_STATUS = 0x02
+SET_LED_COLOR = 0x10
 ERROR_RESPONSE = 0xFF
 RESPONSE_MASK = 0x80
 HANDSHAKE_ATTEMPTS = 3
@@ -87,6 +88,10 @@ class DeviceStatus:
     sample_age_ms: int | None
     led_count: int
     active_led_effect: int
+    led_red: int
+    led_green: int
+    led_blue: int
+    led_brightness_percent: int
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -165,6 +170,21 @@ class ArmorClient:
             raise ConnectionError("GET_STATUS requires a completed handshake")
         return self._parse_status(self._request(GET_STATUS))
 
+    def set_led_color(self, red: int, green: int, blue: int, brightness_percent: int) -> None:
+        """Apply one RGB ratio and brightness to both WS2812 strips after a handshake."""
+
+        if not self._connected:
+            raise ConnectionError("SET_LED_COLOR requires a completed handshake")
+        components = (red, green, blue)
+        if any(not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 255 for value in components):
+            raise ValueError("RGB components must be integers in the range 0..255")
+        if (not isinstance(brightness_percent, int) or isinstance(brightness_percent, bool)
+                or not 0 <= brightness_percent <= 100):
+            raise ValueError("brightness must be an integer in the range 0..100")
+        response = self._request(SET_LED_COLOR, bytes((*components, brightness_percent)))
+        if response.payload:
+            raise ConnectionError("SET_LED_COLOR response must have an empty payload")
+
     def _request(self, command: int, payload: bytes = b"") -> Frame:
         sequence = self._next_sequence
         self._next_sequence = 1 if sequence == 0xFFFF else sequence + 1
@@ -225,11 +245,11 @@ class ArmorClient:
 
     @staticmethod
     def _parse_status(frame: Frame) -> DeviceStatus:
-        if len(frame.payload) != 20:
+        if len(frame.payload) != 24:
             raise ConnectionError("GET_STATUS response has an invalid length")
-        if frame.payload[0] != 1:
+        if frame.payload[0] != 2:
             raise ConnectionError("GET_STATUS schema is unsupported")
-        if frame.payload[17:20] != b"\x00\x00\x00":
+        if frame.payload[21:24] != b"\x00\x00\x00":
             raise ConnectionError("GET_STATUS reserved bytes are non-zero")
         weight_mg = int.from_bytes(frame.payload[7:11], "little", signed=True)
         sample_age_ms = int.from_bytes(frame.payload[11:15], "little")
@@ -241,6 +261,10 @@ class ArmorClient:
             sample_age_ms=None if sample_age_ms == 0xFFFFFFFF else sample_age_ms,
             led_count=frame.payload[15],
             active_led_effect=frame.payload[16],
+            led_red=frame.payload[17],
+            led_green=frame.payload[18],
+            led_blue=frame.payload[19],
+            led_brightness_percent=frame.payload[20],
         )
 
     @staticmethod

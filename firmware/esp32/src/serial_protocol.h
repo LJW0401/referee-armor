@@ -10,6 +10,8 @@
 
 #include <Arduino.h>
 
+#include "led_controller.h"
+
 namespace armor::serial_protocol {
 
 constexpr uint8_t kProtocolVersion = 1;
@@ -19,6 +21,8 @@ constexpr size_t kMaxEncodedFrameLength = 202;
 
 class Endpoint {
  public:
+  explicit Endpoint(led::Controller& led_controller);
+
   /** Starts the USB CDC endpoint. No human-readable text is emitted. */
   void begin(Stream& serial);
 
@@ -34,7 +38,10 @@ class Endpoint {
   void send_device_info(uint16_t sequence, const uint8_t* payload,
                         size_t payload_length);
   void send_status(uint16_t sequence, size_t payload_length);
+  void set_led_color(uint16_t sequence, const uint8_t* payload,
+                     size_t payload_length);
 
+  led::Controller& led_controller_;
   Stream* serial_ = nullptr;
   uint8_t encoded_frame_[kMaxEncodedFrameLength]{};
   size_t encoded_length_ = 0;

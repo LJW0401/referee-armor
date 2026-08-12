@@ -21,10 +21,13 @@ class FakeClient:
     def get_status(self) -> DeviceStatus:
         if self.fail_status:
             raise ConnectionError("serial read failed")
-        return DeviceStatus(1, 0, 10, None, None, 0, 0)
+        return DeviceStatus(2, 0, 10, None, None, 0, 0, 128, 0, 255, 100)
 
     def close(self) -> None:
         self.closed = True
+
+    def set_led_color(self, red: int, green: int, blue: int, brightness_percent: int) -> None:
+        self.color = (red, green, blue, brightness_percent)
 
 
 class ArmorServiceTests(unittest.TestCase):
@@ -49,6 +52,13 @@ class ArmorServiceTests(unittest.TestCase):
         with self.assertRaises(ServiceError):
             service.status()
         self.assertTrue(client.closed)
+
+    def test_sets_color_then_returns_fresh_status(self) -> None:
+        client = FakeClient()
+        service = ArmorService(lambda port: client)
+        service.connect("COM3")
+        service.set_led_color(128, 0, 255, 50)
+        self.assertEqual(client.color, (128, 0, 255, 50))
 
 
 if __name__ == "__main__":

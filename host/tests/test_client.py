@@ -38,14 +38,16 @@ class FakeSerial:
             self._incoming.extend(encode_frame(0x81, request.sequence, payload))
         elif request.frame_type == 0x02:
             payload = (
-                bytes((1,))
+                bytes((2,))
                 + (0x0013).to_bytes(2, "little")
                 + (1000).to_bytes(4, "little")
                 + (12345).to_bytes(4, "little", signed=True)
                 + (15).to_bytes(4, "little")
-                + bytes((4, 2, 0, 0, 0))
+                + bytes((4, 2, 12, 34, 56, 67, 0, 0, 0))
             )
             self._incoming.extend(encode_frame(0x82, request.sequence, payload))
+        elif request.frame_type == 0x10:
+            self._incoming.extend(encode_frame(0x90, request.sequence))
         return len(data)
 
     def reset_input_buffer(self) -> None:
@@ -69,6 +71,19 @@ class ArmorClientTests(unittest.TestCase):
         self.assertEqual(status.weight_mg, 12345)
         self.assertEqual(status.sample_age_ms, 15)
         self.assertEqual(status.led_count, 4)
+        self.assertEqual((status.led_red, status.led_green, status.led_blue), (12, 34, 56))
+        self.assertEqual(status.led_brightness_percent, 67)
+
+    def test_sets_one_color_for_both_light_strips(self) -> None:
+        client = ArmorClient(FakeSerial())
+        client.connect()
+        client.set_led_color(0, 0, 255, 100)
+
+    def test_rejects_out_of_range_color(self) -> None:
+        client = ArmorClient(FakeSerial())
+        client.connect()
+        with self.assertRaisesRegex(ValueError, "0..255"):
+            client.set_led_color(256, 0, 0, 100)
 
     def test_rejects_wrong_handshake_nonce(self) -> None:
         client = ArmorClient(FakeSerial(wrong_nonce=True))

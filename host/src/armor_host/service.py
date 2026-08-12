@@ -72,6 +72,24 @@ class ArmorService:
         with self._lock:
             self._disconnect_locked()
 
+    def set_led_color(self, red: object, green: object, blue: object,
+                      brightness_percent: object) -> dict[str, object]:
+        """Apply one validated RGB ratio and brightness, then return fresh status."""
+
+        if any(not isinstance(value, int) or isinstance(value, bool)
+               for value in (red, green, blue, brightness_percent)):
+            raise ServiceError("RGB components and brightness must be integers")
+        with self._lock:
+            if self._client is None:
+                raise ServiceError("no ESP32 serial session is connected")
+            try:
+                self._client.set_led_color(red, green, blue, brightness_percent)
+                status = self._client.get_status().to_dict()
+            except (ConnectionError, ValueError) as error:
+                raise ServiceError(str(error)) from error
+            self._status_failures = 0
+            return self._snapshot_locked(status)
+
     def _snapshot_locked(self, status: dict[str, object]) -> dict[str, object]:
         return {"port": self._port, "device": self._device, "status": status}
 
