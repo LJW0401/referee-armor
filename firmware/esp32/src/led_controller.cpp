@@ -6,6 +6,7 @@
 #include "led_controller.h"
 
 #include <Adafruit_NeoPixel.h>
+#include <math.h>
 #include <Preferences.h>
 
 namespace armor::led {
@@ -19,6 +20,7 @@ constexpr char kPreferencesNamespace[] = "armor-led";
 constexpr char kColorKey[] = "rgb";
 constexpr uint32_t kColorMask = 0x00FFFFFF;
 constexpr RgbColor kDefaultColor{128, 0, 255};
+constexpr float kSrgbGamma = 2.2F;
 
 Adafruit_NeoPixel left_strip(kPixelsPerStrip, kLeftStripPin, kPixelType);
 Adafruit_NeoPixel right_strip(kPixelsPerStrip, kRightStripPin, kPixelType);
@@ -29,6 +31,17 @@ void fill_strip(Adafruit_NeoPixel& strip, uint32_t packed_color) {
   }
 }
 
+uint8_t srgb_to_led_pwm(uint8_t component) {
+  const float normalized = static_cast<float>(component) / 255.0F;
+  return static_cast<uint8_t>(roundf(powf(normalized, kSrgbGamma) * 255.0F));
+}
+
+uint32_t corrected_color(const RgbColor& color) {
+  return left_strip.Color(srgb_to_led_pwm(color.red),
+                          srgb_to_led_pwm(color.green),
+                          srgb_to_led_pwm(color.blue));
+}
+
 }  // namespace
 
 void Controller::begin() {
@@ -36,8 +49,7 @@ void Controller::begin() {
   right_strip.begin();
   initialized_ = true;
   persistence_healthy_ = load_color();
-  const uint32_t packed_color =
-      left_strip.Color(color_.red, color_.green, color_.blue);
+  const uint32_t packed_color = corrected_color(color_);
   fill_strip(left_strip, packed_color);
   fill_strip(right_strip, packed_color);
   left_strip.show();
@@ -50,7 +62,7 @@ bool Controller::set_color(RgbColor color) {
     return false;
   }
   color_ = color;
-  const uint32_t packed_color = left_strip.Color(color.red, color.green, color.blue);
+  const uint32_t packed_color = corrected_color(color);
   fill_strip(left_strip, packed_color);
   fill_strip(right_strip, packed_color);
   left_strip.show();
