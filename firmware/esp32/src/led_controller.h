@@ -41,7 +41,7 @@ class Controller {
 
   bool initialized_ = false;
   bool persistence_healthy_ = false;
-  RgbColor color_{128, 0, 255};
+  RgbColor color_{128, 0, 128};
   uint8_t brightness_percent_ = 100;
 };
 

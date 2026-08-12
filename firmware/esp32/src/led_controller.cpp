@@ -20,7 +20,7 @@ constexpr char kPreferencesNamespace[] = "armor-led";
 constexpr char kColorKey[] = "rgb";
 constexpr char kBrightnessKey[] = "brightness";
 constexpr uint32_t kColorMask = 0x00FFFFFF;
-constexpr RgbColor kDefaultColor{128, 0, 255};
+constexpr RgbColor kDefaultColor{128, 0, 128};
 constexpr uint8_t kDefaultBrightnessPercent = 100;
 constexpr float kSrgbGamma = 2.2F;
 
