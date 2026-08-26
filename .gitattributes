@@ -1,0 +1,2 @@
+# Repository file classification rules; keep binary documentation byte-exact.
+*.pdf binary
