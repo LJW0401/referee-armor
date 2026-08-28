@@ -1,6 +1,6 @@
 /**
  * @file led_controller.cpp
- * @brief WS2812 driver for left GPIO0 and right GPIO21 light strips.
+ * @brief WS2812 driver for left GPIO0 and right GPIO1 light strips.
  */
 
 #include "led_controller.h"
@@ -15,7 +15,7 @@ namespace {
 
 constexpr uint8_t kPixelsPerStrip = 8;
 constexpr uint8_t kLeftStripPin = 0;
-constexpr uint8_t kRightStripPin = 21;
+constexpr uint8_t kRightStripPin = 1;
 constexpr neoPixelType kPixelType = NEO_GRB + NEO_KHZ800;
 constexpr char kPreferencesNamespace[] = "armor-led";
 constexpr char kColorKey[] = "rgb";
