@@ -2,6 +2,8 @@
 
 Armor module for robot accessories.
 
+> 暂停开发一段时间，目前已经实现了灯光效果，击打检测待后续有空闲时间了再做。结构设计也有待优化，目前的结构还不适合做CNC。
+
 ## 仓库结构
 
 - `firmware/esp32`：ESP32-C3 SuperMini 的 PlatformIO 固件工程。
