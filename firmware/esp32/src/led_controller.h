@@ -1,6 +1,6 @@
 /**
  * @file led_controller.h
- * @brief Owns identical static-color output for the two WS2812 light strips.
+ * @brief Owns WS2812 output effects and their persisted configuration.
  */
 
 #pragma once
@@ -22,7 +22,7 @@ enum class Effect : uint8_t {
 
 class Controller {
  public:
-  /** Initializes both eight-pixel WS2812 strips and turns them off. */
+  /** Initializes both strips and restores their persisted output effect. */
   void begin();
 
   /** Applies one RGB color to every LED on both strips. */
@@ -45,12 +45,13 @@ class Controller {
   /** Reports whether the WS2812 output devices were initialized. */
   bool is_initialized() const;
 
-  /** Reports whether the selected color can be stored in NVS. */
+  /** Reports whether the LED configuration can be stored in NVS. */
   bool is_persistence_healthy() const;
 
  private:
-  bool load_color();
-  bool save_color(RgbColor color, uint8_t brightness_percent) const;
+  bool load_configuration();
+  bool save_configuration(RgbColor color, uint8_t brightness_percent,
+                          Effect effect) const;
   void render_static_color();
   void initialize_breathing(uint32_t now_ms);
   void render_breathing(uint32_t now_ms);

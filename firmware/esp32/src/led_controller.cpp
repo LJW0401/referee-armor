@@ -20,6 +20,7 @@ constexpr neoPixelType kPixelType = NEO_GRB + NEO_KHZ800;
 constexpr char kPreferencesNamespace[] = "armor-led";
 constexpr char kColorKey[] = "rgb";
 constexpr char kBrightnessKey[] = "brightness";
+constexpr char kEffectKey[] = "effect";
 constexpr uint32_t kColorMask = 0x00FFFFFF;
 constexpr RgbColor kDefaultColor{128, 0, 128};
 constexpr uint8_t kDefaultBrightnessPercent = 100;
@@ -104,13 +105,17 @@ void Controller::begin() {
   left_strip.begin();
   right_strip.begin();
   initialized_ = true;
-  persistence_healthy_ = load_color();
-  render_static_color();
+  persistence_healthy_ = load_configuration();
+  if (effect_ == Effect::kRandomBreathing) {
+    initialize_breathing(millis());
+  } else {
+    render_static_color();
+  }
 }
 
 bool Controller::set_color(RgbColor color, uint8_t brightness_percent) {
   if (!initialized_ || !persistence_healthy_ || brightness_percent > 100 ||
-      !save_color(color, brightness_percent)) {
+      !save_configuration(color, brightness_percent, Effect::kStatic)) {
     persistence_healthy_ = false;
     return false;
   }
@@ -122,8 +127,11 @@ bool Controller::set_color(RgbColor color, uint8_t brightness_percent) {
 }
 
 bool Controller::set_effect(Effect effect) {
-  if (!initialized_ || static_cast<uint8_t>(effect) >
-                           static_cast<uint8_t>(Effect::kRandomBreathing)) {
+  if (!initialized_ || !persistence_healthy_ ||
+      static_cast<uint8_t>(effect) >
+          static_cast<uint8_t>(Effect::kRandomBreathing) ||
+      !save_configuration(color_, brightness_percent_, effect)) {
+    persistence_healthy_ = false;
     return false;
   }
   effect_ = effect;
@@ -159,22 +167,26 @@ bool Controller::is_initialized() const { return initialized_; }
 
 bool Controller::is_persistence_healthy() const { return persistence_healthy_; }
 
-bool Controller::load_color() {
+bool Controller::load_configuration() {
   Preferences preferences;
-  // Open read-write on first boot so the namespace can be created before a
-  // later SET_LED_COLOR command persists the user's selection.
+  // Open read-write on first boot so the namespace is ready for later LED
+  // configuration commands.
   if (!preferences.begin(kPreferencesNamespace, false)) {
     color_ = kDefaultColor;
     brightness_percent_ = kDefaultBrightnessPercent;
+    effect_ = Effect::kStatic;
     return false;
   }
   const uint32_t packed_color = preferences.getUInt(kColorKey, kColorMask + 1);
   const uint8_t stored_brightness =
       preferences.getUChar(kBrightnessKey, kDefaultBrightnessPercent);
+  const uint8_t stored_effect =
+      preferences.getUChar(kEffectKey, static_cast<uint8_t>(Effect::kStatic));
   preferences.end();
   if (packed_color > kColorMask) {
     color_ = kDefaultColor;
     brightness_percent_ = kDefaultBrightnessPercent;
+    effect_ = Effect::kStatic;
     return true;
   }
   color_ = {
@@ -183,14 +195,19 @@ bool Controller::load_color() {
       static_cast<uint8_t>(packed_color),
   };
   brightness_percent_ = stored_brightness;
-  if (brightness_percent_ > 100) {
+  if (brightness_percent_ > 100 ||
+      stored_effect > static_cast<uint8_t>(Effect::kRandomBreathing)) {
     color_ = kDefaultColor;
     brightness_percent_ = kDefaultBrightnessPercent;
+    effect_ = Effect::kStatic;
+    return true;
   }
+  effect_ = static_cast<Effect>(stored_effect);
   return true;
 }
 
-bool Controller::save_color(RgbColor color, uint8_t brightness_percent) const {
+bool Controller::save_configuration(RgbColor color, uint8_t brightness_percent,
+                                    Effect effect) const {
   Preferences preferences;
   if (!preferences.begin(kPreferencesNamespace, false)) {
     return false;
@@ -202,8 +219,11 @@ bool Controller::save_color(RgbColor color, uint8_t brightness_percent) const {
       preferences.putUInt(kColorKey, packed_color) == sizeof(packed_color);
   const bool saved_brightness =
       preferences.putUChar(kBrightnessKey, brightness_percent) == sizeof(brightness_percent);
+  const uint8_t stored_effect = static_cast<uint8_t>(effect);
+  const bool saved_effect =
+      preferences.putUChar(kEffectKey, stored_effect) == sizeof(stored_effect);
   preferences.end();
-  return saved_color && saved_brightness;
+  return saved_color && saved_brightness && saved_effect;
 }
 
 void Controller::initialize_breathing(uint32_t now_ms) {
