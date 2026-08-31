@@ -33,7 +33,7 @@ constexpr size_t kSetLedEffectRequestLength = 1;
 
 constexpr uint8_t kFirmwareMajor = 0;
 constexpr uint8_t kFirmwareMinor = 2;
-constexpr uint8_t kFirmwarePatch = 0;
+constexpr uint8_t kFirmwarePatch = 2;
 
 uint16_t crc16_ccitt_false(const uint8_t* data, size_t length) {
   uint16_t crc = 0xFFFF;
